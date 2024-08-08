@@ -44,8 +44,8 @@ jobs:
 
       - name: Build
         env:
-          # Deploying to a root domain
-          BASE_PATH: ''
+          # Replace with / if deploying to a root domain
+          BASE_PATH: '/multiformat-inspector'
         run: |
           npm run build
           touch build/.nojekyll
