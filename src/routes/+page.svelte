@@ -58,7 +58,7 @@
 				hashName: multicodec ? multicodec.name : 'Unknown',
 				hashCode: `0x${decodedMultihash.code.toString()}`,
 				digest: decodedMultihash.digest,
-				length: 1
+				length: decodedMultihash.digest.length
 			};
 		} catch (err: unknown) {
 			error = (err as Error).message || 'Unable to decode';
