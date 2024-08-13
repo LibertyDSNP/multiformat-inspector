@@ -6,9 +6,9 @@
 
 	interface DecodedMultiformat {
 		multibase: string;
-		multicodec: string;
 		multicodecName: string;
-		multicodecTag: string;
+		multicodecCode: string;
+		multicodecTag?: string;
 		ipldCode?: string;
 		ipldName?: string;
 		hashCode?: string;
@@ -25,7 +25,9 @@
 
 	// type MultibaseFormats = keyof typeof bases;
 
-	function getBase(multiformat: string): any | null {
+	function getBase(
+		multiformat: string
+	): { decode: (s: string) => Uint8Array; name: string } | null {
 		const prefix = multiformat[0];
 		const pair = Object.entries(bases).find(([_k, base]) => base.prefix === prefix);
 		return pair ? pair[1] : null;
@@ -68,40 +70,45 @@
 		const [code, sizeOffset] = varint.decode(multiformatEncoded);
 		const multicode = `0x${code.toString(16).padStart(2, '0')}`;
 		const multicodec = multicodecs.find((x) => x.code === multicode);
+		if (!multicodec) {
+			return {
+				multibase: baseName,
+				multicodecName: 'Unknown',
+				multicodecCode: multicode
+			};
+		}
 		decodedMultiformat = {
 			multibase: baseName,
-			multicodecName: multicodec ? multicodec.name : 'Unknown',
+			multicodecName: multicodec.name,
 			multicodecCode: multicodec.code,
 			multicodecTag: multicodec.tag
 		};
-		switch (multicodec.tag) {
-			case 'multihash':
-				const decodedMultihash = decode(multiformatEncoded);
-				decodedMultiformat.digest = decodedMultihash.digest;
-				decodedMultiformat.length = decodedMultihash.digest.length;
-				break;
-			case 'cid':
-				if (multicodec.name === 'cidv1') {
-					const [ipldCode, ipldOffset] = varint.decode(multiformatEncoded.subarray(sizeOffset));
-					const ipldHexCode = `0x${ipldCode.toString(16).padStart(2, '0')}`;
-					console.log({ ipldCode });
-					const ipldMulticodec = multicodecs.find((x) => x.code === ipldHexCode);
-					decodedMultiformat.ipldCode = ipldHexCode;
-					decodedMultiformat.ipldName = ipldMulticodec.name;
+		let decodedMultihash: { digest: Uint8Array } | null = null;
+		if (multicodec.tag === 'multihash') {
+			decodedMultihash = decode(multiformatEncoded);
+			decodedMultiformat.digest = decodedMultihash.digest;
+			decodedMultiformat.length = decodedMultihash.digest.length;
+		} else if (multicodec.name === 'cidv1') {
+			const [ipldCode, ipldOffset] = varint.decode(multiformatEncoded.subarray(sizeOffset));
+			const ipldHexCode = `0x${ipldCode.toString(16).padStart(2, '0')}`;
+			console.log({ ipldCode });
+			const ipldMulticodec = multicodecs.find((x) => x.code === ipldHexCode);
+			decodedMultiformat.ipldCode = ipldHexCode;
+			decodedMultiformat.ipldName = ipldMulticodec ? ipldMulticodec.name : 'Unknown';
 
-					// Recursively handle the remaining multihash
-					const internalDecoded = decodeMultiformat(
-						multiformatEncoded.subarray(sizeOffset + ipldOffset),
-						baseName
-					);
-					decodedMultiformat.hashName = internalDecoded.multicodecName;
-					decodedMultiformat.hashCode = internalDecoded.multicodecCode;
-					decodedMultiformat.digest = internalDecoded.digest;
-					decodedMultiformat.length = internalDecoded.digest.length;
-					break;
-				}
-			default:
-				decodedMultiformat.bytes = multiformatEncoded.subarray(sizeOffset);
+			// Recursively handle the remaining multihash
+			const internalDecoded = decodeMultiformat(
+				multiformatEncoded.subarray(sizeOffset + ipldOffset),
+				baseName
+			);
+			if (internalDecoded) {
+				decodedMultiformat.hashName = internalDecoded.multicodecName;
+				decodedMultiformat.hashCode = internalDecoded.multicodecCode;
+				decodedMultiformat.digest = internalDecoded.digest;
+				decodedMultiformat.length = internalDecoded.digest?.length;
+			}
+		} else {
+			decodedMultiformat.bytes = multiformatEncoded.subarray(sizeOffset);
 		}
 		return decodedMultiformat;
 	}
@@ -130,7 +137,7 @@
 				{#if decodedMultiformat.digest}
 					<p>Digest: {decodedMultiformat ? '0x' + toHex(decodedMultiformat.digest) : 'Unknown'}</p>
 					<p>Length: {decodedMultiformat.length}</p>
-				{:else}
+				{:else if decodedMultiformat.bytes}
 					<p>Bytes: {'0x' + toHex(decodedMultiformat.bytes)}</p>
 					<p>Length: {decodedMultiformat.bytes.length}</p>
 				{/if}
