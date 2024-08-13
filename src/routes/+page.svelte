@@ -118,29 +118,56 @@
 	<h1>Multiformat Multibase Inspector (Multihash and More)</h1>
 
 	<label for="input-hash">Enter a Multibase string or a 0x prefixed hex Multiformat value:</label>
-	<input type="text" id="input-multiformat" bind:value={inputMultiformat} />
-	<button on:click={decodeInput}>Decode</button>
+	<input type="text" id="input-multiformat" bind:value={inputMultiformat} on:input={decodeInput}/>
 
 	{#if hasResult}
 		<div>
 			<h2>Decoded Multiformat</h2>
 			{#if decodedMultiformat}
-				<p>Multibase Encoding: {decodedMultiformat.multibase}</p>
-				<p>
-					Multicodec Name: {decodedMultiformat.multicodecName} ({decodedMultiformat.multicodecCode})
-				</p>
-				<p>Multicodec Tag: {decodedMultiformat.multicodecTag}</p>
+			<table>
+				<tr>
+					<td>Multibase Encoding</td>
+					<td>{decodedMultiformat.multibase}</td>
+				</tr>
+				<tr>
+					<td>Multicodec Name</td>
+					<td>{decodedMultiformat.multicodecName} ({decodedMultiformat.multicodecCode})</td>
+				</tr>
+				<tr>
+					<td>Multicodec Tag</td>
+					<td>{decodedMultiformat.multicodecTag}</td>
+				</tr>
+
 				{#if decodedMultiformat.ipldCode}
-					<p>IPLD Codec: {decodedMultiformat.ipldName} ({decodedMultiformat.ipldCode})</p>
-					<p>CID Hash Algorithm: {decodedMultiformat.hashName} ({decodedMultiformat.hashCode})</p>
+					<tr>
+						<td>IPLD Codec</td>
+						<td>{decodedMultiformat.ipldName} ({decodedMultiformat.ipldCode})</td>
+					</tr>				
+					<tr>
+						<td>CID Hash Algorithm</td>
+						<td>{decodedMultiformat.hashName} ({decodedMultiformat.hashCode})</td>
+					</tr>
 				{/if}
 				{#if decodedMultiformat.digest}
-					<p>Digest: {decodedMultiformat ? '0x' + toHex(decodedMultiformat.digest) : 'Unknown'}</p>
-					<p>Length: {decodedMultiformat.length}</p>
+					<tr>
+						<td>Digest</td>
+						<td>{decodedMultiformat ? '0x' + toHex(decodedMultiformat.digest) : 'Unknown'}</td>
+					</tr>
+					<tr>
+						<td>Length</td>
+						<td>{decodedMultiformat.length}</td>
+					</tr>	
 				{:else if decodedMultiformat.bytes}
-					<p>Bytes: {'0x' + toHex(decodedMultiformat.bytes)}</p>
-					<p>Length: {decodedMultiformat.bytes.length}</p>
+					<tr>
+						<td>Bytes</td>
+						<td>{'0x' + toHex(decodedMultiformat.bytes)}</td>
+					</tr>
+					<tr>
+						<td>Length</td>
+						<td>{decodedMultiformat.bytes.length}</td>
+					</tr>	
 				{/if}
+			</table>
 			{:else if error}
 				<p>Error: {error}</p>
 			{/if}
@@ -160,15 +187,22 @@
 		margin-bottom: 0.5rem;
 	}
 
-	input {
+	input{
 		width: 100%;
-	}
-
-	input,
-	button {
 		font-size: 1rem;
 		padding: 0.5rem 1rem;
 		margin-bottom: 1rem;
 		box-sizing: border-box;
+	}
+
+	table, th, td {
+		border: 1px solid black;
+		border-collapse: collapse;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+	
+	td:nth-child(1) {
+		text-align: center;
 	}
 </style>
